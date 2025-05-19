@@ -56,6 +56,9 @@
             border-color: #D14E83;
             box-shadow: 0 0 0 2px rgba(209, 78, 131, 0.2);
         }
+        input:invalid, select:invalid, textarea:invalid {
+            border-color: #FF4136; /* Red border for invalid fields */
+        }
         .btn {
             border-radius: 8px;
             padding: 10px 20px;
@@ -115,7 +118,7 @@
         .modal-buttons button {
             margin: 0 10px;
         }
-        #statusMessage {
+        #statusMessage, #validationError {
             margin-top: 15px;
             padding: 10px;
             border-radius: 8px;
@@ -125,7 +128,7 @@
             background-color: #D1E7DD; 
             color: #0F5132; 
         }
-        .status-error {
+        .status-error, .validation-error-message {
             background-color: #F8D7DA; 
             color: #842029; 
         }
@@ -166,6 +169,11 @@
             margin-top: 5px;
             margin-left: 25px; /* Indent a bit */
         }
+        .error-text {
+            color: #FF4136;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
     </style>
 </head>
 <body>
@@ -176,7 +184,7 @@
                 <p>นักเรียนชั้นมัธยมศึกษาปีที่ 6 ปีการศึกษา 2568 โรงเรียนฮอดพิทยาคม</p>
             </div>
 
-            <form id="interestForm" class="mt-8 space-y-6">
+            <form id="interestForm" class="mt-8 space-y-6" novalidate>
                 <input type="hidden" id="recordId" name="recordId">
                 <section>
                     <h2 class="form-section-header">ข้อมูลส่วนตัว 🐇</h2>
@@ -232,8 +240,8 @@
                 <section>
                     <h2 class="form-section-header">ข้อมูลความสนใจในการศึกษาต่อ 🎓</h2>
                     <div>
-                        <label class="block text-sm font-medium mb-2">เหตุผลในการตัดสินใจศึกษาต่อ (เลือกได้มากกว่า 1 ข้อ):</label>
-                        <div class="space-y-2 checkbox-group">
+                        <label class="block text-sm font-medium mb-2">เหตุผลในการตัดสินใจศึกษาต่อ (เลือกอย่างน้อย 1 ข้อ):</label>
+                        <div class="space-y-2 checkbox-group" id="decisionReasonGroup">
                             <div><label><input type="checkbox" name="decisionReason" value="ความชอบส่วนตัว"> ความชอบส่วนตัว / ความถนัด</label></div>
                             <div><label><input type="checkbox" name="decisionReason" value="โอกาสในการทำงานที่ดี"> โอกาสในการทำงานที่ดี / รายได้สูง</label></div>
                             <div><label><input type="checkbox" name="decisionReason" value="ตามคำแนะนำของผู้ปกครอง"> ตามคำแนะนำของผู้ปกครอง / ครอบครัว</label></div>
@@ -245,23 +253,25 @@
                                 <input type="text" id="otherReasonText" name="otherReasonText" class="mt-1 block w-full sm:w-1/2 other-reason-input hidden" placeholder="ระบุเหตุผลอื่นๆ">
                             </div>
                         </div>
+                        <p id="decisionReasonError" class="error-text hidden">กรุณาเลือกเหตุผลอย่างน้อย 1 ข้อ</p>
                         <input type="hidden" id="combinedDecisionReason" name="combinedDecisionReason">
                     </div>
 
                     <div class="mt-4">
                         <label class="block text-sm font-medium mb-1">หลังเรียนจบชั้น ม.6 นักเรียนจะเรียนต่อหรือไม่?</label>
                         <div class="flex items-center space-x-4">
-                            <label><input type="radio" name="continueStudy" value="ใช่" class="mr-1"> ใช่</label>
-                            <label><input type="radio" name="continueStudy" value="ไม่ใช่" class="mr-1" checked> ไม่ใช่</label>
+                            <label><input type="radio" name="continueStudy" value="ใช่" class="mr-1" required> ใช่</label>
+                            <label><input type="radio" name="continueStudy" value="ไม่ใช่" class="mr-1" required> ไม่ใช่</label>
                         </div>
                     </div>
                     <div id="furtherEducationDetails" class="mt-4 space-y-4 hidden">
                         <div>
                             <label class="block text-sm font-medium mb-1">ถ้าเรียนต่อ จะเรียนต่อระดับใด?</label>
-                            <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-4" id="educationLevelGroup">
                                 <label><input type="radio" name="educationLevel" value="ปวส." class="mr-1"> ปวส.</label>
                                 <label><input type="radio" name="educationLevel" value="ปริญญาตรี" class="mr-1"> ปริญญาตรี</label>
                             </div>
+                             <p id="educationLevelError" class="error-text hidden">กรุณาเลือกระดับการศึกษา</p>
                         </div>
                         <div>
                             <label for="facultyInterest" class="block text-sm font-medium mb-1">คณะ/สาขาที่สนใจ:</label>
@@ -271,7 +281,8 @@
                                 <option value="คณะทันตแพทยศาสตร์">
                                 <option value="คณะเภสัชศาสตร์">
                                 <option value="คณะพยาบาลศาสตร์">
-                                <option value="คณะสหเวชศาสตร์"> <option value="คณะเทคนิคการแพทย์">
+                                <option value="คณะสหเวชศาสตร์">
+                                <option value="คณะเทคนิคการแพทย์">
                                 <option value="คณะกายภาพบำบัด">
                                 <option value="คณะสัตวแพทยศาสตร์">
                                 <option value="คณะสาธารณสุขศาสตร์">
@@ -429,7 +440,7 @@
                         </div>
                     </div>
                 </section>
-
+                <div id="validationError" class="validation-error-message hidden"></div>
                 <div class="flex justify-end space-x-3">
                     <button type="button" id="clearFormBtn" class="btn bg-gray-300 hover:bg-gray-400 text-gray-800">ล้างฟอร์ม</button>
                     <button type="submit" id="submitBtn" class="btn btn-submit">บันทึกข้อมูล</button>
@@ -478,11 +489,12 @@
     </div>
 
     <script>
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbywifYK-KBsKTBxG7aKbN76n2p-38GsoEb04jO15QFZQVeGg3gjfYK2rANDKomZbmGj/exec';
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbxmuZmChPEfV_0iGwxgPfy9oHUAY6fT7kt1bM2gsf-Fh4Iof9qo6rebzTHpt-IKkPDi/exec';
         const form = document.getElementById('interestForm');
         const submitBtn = document.getElementById('submitBtn');
         const recordIdField = document.getElementById('recordId');
         const statusMessage = document.getElementById('statusMessage');
+        const validationErrorMessage = document.getElementById('validationError');
         const furtherEducationDetails = document.getElementById('furtherEducationDetails');
         const continueStudyRadios = document.querySelectorAll('input[name="continueStudy"]');
         const dataTableBody = document.getElementById('dataTableBody');
@@ -494,31 +506,43 @@
         const otherReasonCheckbox = document.getElementById('otherReasonCheckbox');
         const otherReasonText = document.getElementById('otherReasonText');
         const combinedDecisionReasonField = document.getElementById('combinedDecisionReason');
+        const decisionReasonGroup = document.getElementById('decisionReasonGroup');
+        const decisionReasonError = document.getElementById('decisionReasonError');
+        const educationLevelGroup = document.getElementById('educationLevelGroup');
+        const educationLevelError = document.getElementById('educationLevelError');
+        const facultyInterestField = document.getElementById('facultyInterest');
+        const universityInterestField = document.getElementById('universityInterest');
 
 
         // Show/hide "Other reason" text input
         otherReasonCheckbox.addEventListener('change', function() {
             if (this.checked) {
                 otherReasonText.classList.remove('hidden');
-                otherReasonText.required = true;
+                otherReasonText.required = true; // Make it required if "อื่นๆ" is checked
             } else {
                 otherReasonText.classList.add('hidden');
                 otherReasonText.required = false;
-                otherReasonText.value = ''; // Clear the text if unchecked
+                otherReasonText.value = ''; 
             }
         });
         
-        // Show/hide further education details based on radio button selection
+        // Show/hide further education details and set/unset required attributes
         continueStudyRadios.forEach(radio => {
             radio.addEventListener('change', function() {
+                const educationLevelRadios = document.querySelectorAll('input[name="educationLevel"]');
                 if (this.value === 'ใช่') {
                     furtherEducationDetails.classList.remove('hidden');
+                    facultyInterestField.required = true;
+                    universityInterestField.required = true;
+                    // educationLevel radios will be validated by custom logic
                 } else {
                     furtherEducationDetails.classList.add('hidden');
-                    // Clear related fields if "No" is selected
-                    document.querySelectorAll('#furtherEducationDetails input[type="radio"]').forEach(r => r.checked = false);
-                    document.getElementById('facultyInterest').value = '';
-                    document.getElementById('universityInterest').value = '';
+                    facultyInterestField.required = false;
+                    universityInterestField.required = false;
+                    facultyInterestField.value = '';
+                    universityInterestField.value = '';
+                    educationLevelRadios.forEach(r => r.checked = false);
+                    educationLevelError.classList.add('hidden'); // Hide error if not continuing study
                 }
             });
         });
@@ -527,7 +551,16 @@
             statusMessage.textContent = message;
             statusMessage.className = `p-3 rounded-md mt-4 text-center ${type === 'success' ? 'status-success' : type === 'error' ? 'status-error' : 'status-loading'}`;
             statusMessage.classList.remove('hidden');
+            validationErrorMessage.classList.add('hidden'); // Hide validation error when status is shown
         }
+        
+        function showValidationError(message) {
+            validationErrorMessage.textContent = message;
+            validationErrorMessage.classList.remove('hidden');
+            validationErrorMessage.className = 'validation-error-message p-3 rounded-md mt-4 text-center';
+            statusMessage.classList.add('hidden'); // Hide status when validation error is shown
+        }
+
 
         function hideStatus() {
             statusMessage.classList.add('hidden');
@@ -543,15 +576,98 @@
             submitBtn.classList.add('btn-submit');
             furtherEducationDetails.classList.add('hidden'); 
             document.querySelector('input[name="continueStudy"][value="ไม่ใช่"]').checked = true; 
-            otherReasonText.classList.add('hidden'); // Hide other reason text field
+            // Manually trigger change to ensure conditional fields are reset correctly
+            const event = new Event('change');
+            document.querySelector('input[name="continueStudy"][value="ไม่ใช่"]').dispatchEvent(event);
+
+            otherReasonText.classList.add('hidden'); 
             otherReasonText.required = false;
+            decisionReasonError.classList.add('hidden');
+            educationLevelError.classList.add('hidden');
+            validationErrorMessage.classList.add('hidden');
             hideStatus();
         }
 
         clearFormBtn.addEventListener('click', resetForm);
 
+        function validateForm() {
+            let isValid = true;
+            let errorMessages = [];
+
+            // Basic HTML5 validation check for required fields not covered by custom logic
+            if (!form.checkValidity()) {
+                 // Find first invalid element and focus it
+                const firstInvalid = form.querySelector(':invalid');
+                if (firstInvalid) {
+                    firstInvalid.focus();
+                }
+                errorMessages.push('กรุณากรอกข้อมูลในช่องที่มีเครื่องหมาย * หรือที่ระบุว่าจำเป็นให้ครบถ้วน');
+                isValid = false;
+            }
+            
+            // Validate "เหตุผลในการตัดสินใจศึกษาต่อ" - at least one checkbox
+            const checkedReasons = decisionReasonGroup.querySelectorAll('input[name="decisionReason"]:checked').length;
+            if (checkedReasons === 0) {
+                decisionReasonError.classList.remove('hidden');
+                errorMessages.push('กรุณาเลือกเหตุผลในการตัดสินใจศึกษาต่ออย่างน้อย 1 ข้อ');
+                isValid = false;
+            } else {
+                decisionReasonError.classList.add('hidden');
+            }
+
+            // Validate "อื่นๆ" text field if "อื่นๆ" checkbox is checked
+            if (otherReasonCheckbox.checked && otherReasonText.value.trim() === "") {
+                otherReasonText.classList.add('border-red-500'); // Add red border
+                errorMessages.push('กรุณาระบุเหตุผลอื่นๆ หากเลือกช่อง "อื่นๆ"');
+                isValid = false;
+            } else {
+                otherReasonText.classList.remove('border-red-500');
+            }
+            
+            // Validate conditional fields if "continueStudy" is "ใช่"
+            const isContinuingStudy = document.querySelector('input[name="continueStudy"]:checked');
+            if (isContinuingStudy && isContinuingStudy.value === 'ใช่') {
+                // Validate "ระดับการศึกษา"
+                const selectedEducationLevel = educationLevelGroup.querySelector('input[name="educationLevel"]:checked');
+                if (!selectedEducationLevel) {
+                    educationLevelError.classList.remove('hidden');
+                    errorMessages.push('กรุณาเลือกระดับการศึกษาที่จะเรียนต่อ');
+                    isValid = false;
+                } else {
+                    educationLevelError.classList.add('hidden');
+                }
+
+                // facultyInterest and universityInterest are handled by 'required' attribute toggling
+                // but we can add explicit checks here if needed or for a combined error message.
+                if (facultyInterestField.value.trim() === "") {
+                     if (!errorMessages.includes('กรุณากรอกคณะ/สาขาที่สนใจ')) { // Avoid duplicate message
+                        errorMessages.push('กรุณากรอกคณะ/สาขาที่สนใจ');
+                     }
+                    isValid = false;
+                }
+                if (universityInterestField.value.trim() === "") {
+                     if (!errorMessages.includes('กรุณากรอกมหาวิทยาลัยที่สนใจ')) { // Avoid duplicate message
+                        errorMessages.push('กรุณากรอกมหาวิทยาลัยที่สนใจ');
+                     }
+                    isValid = false;
+                }
+            }
+
+            if (!isValid) {
+                showValidationError(errorMessages.join('\n'));
+            } else {
+                validationErrorMessage.classList.add('hidden');
+            }
+            return isValid;
+        }
+
+
         form.addEventListener('submit', e => {
             e.preventDefault();
+
+            if (!validateForm()) {
+                return; // Stop submission if validation fails
+            }
             
             // Combine decision reasons
             const selectedReasons = [];
@@ -572,30 +688,34 @@
             const formData = new FormData(form);
             const params = new URLSearchParams();
             for (const pair of formData) {
-                 // Use combinedDecisionReason instead of individual checkboxes for 'decisionReason'
                 if (pair[0] === 'decisionReason' && pair[1] !== 'อื่นๆ') { 
-                    // Skip individual 'decisionReason' checkboxes as they are now combined
-                    // The 'อื่นๆ' checkbox value itself is not sent, only its text field if filled.
-                    // This logic is handled by populating combinedDecisionReasonField.value
                     continue; 
                 }
                 if (pair[0] === 'otherReasonText' && !otherReasonCheckbox.checked) {
-                    // Skip otherReasonText if "อื่นๆ" checkbox is not checked
                     continue;
                 }
                 params.append(pair[0], pair[1]);
             }
             
-            // Ensure combinedDecisionReason is part of the params if it was populated
             if (combinedDecisionReasonField.value) {
-                 // Remove individual decisionReason params if any slipped through, and otherReasonText
                 params.delete('decisionReason');
                 params.delete('otherReasonText');
-                params.append('decisionReason', combinedDecisionReasonField.value); // Send the combined string
+                params.append('decisionReason', combinedDecisionReasonField.value); 
             } else {
-                // If no reasons selected, ensure decisionReason is empty or not sent
                 params.delete('decisionReason');
                 params.append('decisionReason', ''); 
+            }
+
+            // If not continuing study, ensure conditional fields are not sent or are empty
+            const isContinuing = document.querySelector('input[name="continueStudy"]:checked').value === 'ใช่';
+            if (!isContinuing) {
+                params.delete('educationLevel');
+                params.delete('facultyInterest');
+                params.delete('universityInterest');
+                // Optionally, explicitly set them to empty if your Apps Script expects them
+                // params.append('educationLevel', '');
+                // params.append('facultyInterest', '');
+                // params.append('universityInterest', '');
             }
 
 
@@ -706,11 +826,12 @@
                         form.classRoom.value = record.classRoom || '';
                         form.studyPlan.value = record.studyPlan || '';
                         
-                        // Populate decision reasons
-                        document.querySelectorAll('input[name="decisionReason"]').forEach(cb => cb.checked = false); // Reset checkboxes
+                        document.querySelectorAll('input[name="decisionReason"]').forEach(cb => cb.checked = false); 
                         otherReasonText.value = '';
                         otherReasonText.classList.add('hidden');
                         otherReasonCheckbox.checked = false;
+                        otherReasonText.required = false;
+
 
                         if (record.decisionReason) {
                             const reasons = record.decisionReason.split(', ');
@@ -727,23 +848,40 @@
                             });
                         }
                         
-                        const continueStudy = record.continueStudy === 'ใช่';
-                        form.querySelector(`input[name="continueStudy"][value="ใช่"]`).checked = continueStudy;
-                        form.querySelector(`input[name="continueStudy"][value="ไม่ใช่"]`).checked = !continueStudy;
+                        const continueStudyValue = record.continueStudy || 'ไม่ใช่'; // Default to 'ไม่ใช่' if undefined
+                        const continueStudyRadio = form.querySelector(`input[name="continueStudy"][value="${continueStudyValue}"]`);
+                        if (continueStudyRadio) {
+                            continueStudyRadio.checked = true;
+                        }
+                        // Manually trigger change to ensure conditional fields are updated
+                        const event = new Event('change');
+                        if (continueStudyRadio) continueStudyRadio.dispatchEvent(event);
 
-                        if (continueStudy) {
+
+                        if (continueStudyValue === 'ใช่') {
                             furtherEducationDetails.classList.remove('hidden');
-                            if(record.educationLevel) form.querySelector(`input[name="educationLevel"][value="${record.educationLevel}"]`).checked = true;
+                            const educationLevelValue = record.educationLevel;
+                            if (educationLevelValue) {
+                                const educationLevelRadio = form.querySelector(`input[name="educationLevel"][value="${educationLevelValue}"]`);
+                                if (educationLevelRadio) educationLevelRadio.checked = true;
+                            }
                             form.facultyInterest.value = record.facultyInterest || '';
                             form.universityInterest.value = record.universityInterest || '';
+                            facultyInterestField.required = true;
+                            universityInterestField.required = true;
                         } else {
                             furtherEducationDetails.classList.add('hidden');
+                            facultyInterestField.required = false;
+                            universityInterestField.required = false;
                         }
                         
                         recordIdField.value = record.id; 
                         submitBtn.textContent = 'อัปเดตข้อมูล';
                         submitBtn.classList.remove('btn-submit');
                         submitBtn.classList.add('btn-edit');
+                        validationErrorMessage.classList.add('hidden');
+                        decisionReasonError.classList.add('hidden');
+                        educationLevelError.classList.add('hidden');
                         hideStatus();
                         window.scrollTo({ top: 0, behavior: 'smooth' }); 
                     } else {
@@ -807,8 +945,24 @@
                 recordToDeleteId = null;
             }
         }
-
-        document.addEventListener('DOMContentLoaded', loadData);
+        // Set initial state for continueStudy radio and related fields
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            const initialContinueStudy = document.querySelector('input[name="continueStudy"]:checked');
+            if (initialContinueStudy && initialContinueStudy.value === 'ใช่') {
+                furtherEducationDetails.classList.remove('hidden');
+                facultyInterestField.required = true;
+                universityInterestField.required = true;
+            } else {
+                furtherEducationDetails.classList.add('hidden');
+                facultyInterestField.required = false;
+                universityInterestField.required = false;
+            }
+            // Ensure "No" is checked by default if nothing is pre-selected (e.g. on first load)
+            if (!initialContinueStudy) {
+                 document.querySelector('input[name="continueStudy"][value="ไม่ใช่"]').checked = true;
+            }
+        });
     </script>
 </body>
 </html>
